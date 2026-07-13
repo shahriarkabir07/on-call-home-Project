@@ -17,7 +17,8 @@
 ## Technology Stack
 
 * **Frontend:** HTML, CSS, JavaScript
-* **Backend:** *(To be decided)*
+* **Desktop Framework:** Electron.js
+* **Backend:** Node.js *(if applicable)*
 * **Database:** MySQL
 
 ## Project Structure
