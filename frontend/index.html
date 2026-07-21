@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OnCall Home - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: #f8f9fa;
+            color: #333;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        .sidebar {
+            width: 260px;
+            background-color: #1e293b;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .logo-section h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .menu-links {
+            list-style: none;
+        }
+
+        .menu-links li {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+
+        .menu-links li:hover, .menu-links li.active {
+            background-color: #334155;
+            color: #38bdf8;
+        }
+
+        .user-profile {
+            border-top: 1px solid #334155;
+            padding-top: 15px;
+            font-size: 14px;
+        }
+
+        .user-profile p {
+            color: #94a3b8;
+        }
+
+        /* --- MAIN CONTENT AREA --- */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            color: #0f172a;
+        }
+
+        .search-bar {
+            padding: 10px 15px;
+            width: 300px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        /* --- SERVICE CARDS GRID --- */
+        .section-title {
+            font-size: 18px;
+            color: #475569;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px 20px;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #38bdf8;
+        }
+
+        .card-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .card h3 {
+            font-size: 18px;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            font-size: 13px;
+            color: #64748b;
+        }
+
+        /* --- QUICK SUMMARY BANNER --- */
+        .promo-banner {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            color: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .promo-text h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .promo-btn {
+            background-color: white;
+            color: #2563eb;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .promo-btn:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="sidebar">
+        <div class="logo-section">
+            <h2>OnCall Home</h2>
+            <ul class="menu-links">
+    <li id="nav-dashboard" class="active" onclick="showDashboard()">🏠 Dashboard</li>
+    <li id="nav-bookings" onclick="viewMyBookings()">📅 My Bookings</li> <!-- Modified this line -->
+    <li>👤 Profile Settings</li>
+    <li>💬 Messages</li>
+    <li>ℹ️ Help & Support</li>
+</ul>
+        </div>
+        <div class="user-profile">
+            <strong>Shahriar Kabir</strong>
+            <p>ID: 242-35-570</p>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div class="main-content" id="dashboard-view">
+        <div class="header">
+            <h1>Welcome back, Shahriar!</h1>
+            <input type="text" class="search-bar" placeholder="Search for services...">
+        </div>
+
+        <div class="promo-banner">
+            <div class="promo-text">
+                <h2>Need an emergency repair?</h2>
+                <p>Get a verified professional at your doorstep within 1 hour.</p>
+            </div>
+            <button class="promo-btn">Book Now</button>
+        </div>
+
+        <div class="section-title">Explore Home Services</div>
+        <div class="services-grid">
+            <div class="card" onclick="viewCategory('Plumbing')">
+                <div class="card-icon">🚰</div>
+                <h3>Plumbing</h3>
+                <p>Fix leaks, pipes, and taps</p>
+            </div>
+            <div class="card" onclick="viewCategory('Electrical')">
+                <div class="card-icon">⚡</div>
+                <h3>Electrician</h3>
+                <p>Wiring, fan installation & repairs</p>
+            </div>
+            <div class="card" onclick="viewCategory('Carpentry')">
+                <div class="card-icon">🪚</div>
+                <h3>Carpentry</h3>
+                <p>Furniture repair & assembly</p>
+            </div>
+            <div class="card" onclick="viewCategory('Cleaning')">
+                <div class="card-icon">🧹</div>
+                <h3>House Cleaning</h3>
+                <p>Deep cleaning & dusting</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- WORKERS LIST VIEW (Initially Hidden) -->
+    <div class="main-content" id="workers-view" style="display: none;">
+        <div class="header">
+            <h1 id="category-title">Available Professionals</h1>
+            <button class="promo-btn" style="background: #e2e8f0; color: #1e293b;" onclick="showDashboard()">← Back</button>
+        </div>
+        
+        <div id="workers-list">
+            <!-- JavaScript will inject workers dynamically here -->
+        </div>
+    </div>
+<!-- MY BOOKINGS VIEW (Initially Hidden) -->
+    <div class="main-content" id="my-bookings-view" style="display: none;">
+        <div class="header">
+            <h1>My Booking History</h1>
+            <button class="promo-btn" style="background: #e2e8f0; color: #1e293b;" onclick="showDashboard()">← Back to Dashboard</button>
+        </div>
+        
+        <div id="bookings-history-list">
+            <!-- Bookings will be dynamically injected here -->
+        </div>
+    </div>
+    <!-- SIMPLE INTERACTION SCRIPT -->
+    <script>
+        // Mock data representing database items
+        const workersDatabase = {
+            'Plumbing': [
+                { name: 'Abdur Rahman', rating: '⭐ 4.8', rate: '500 BDT/hr', availability: 'Available Now' },
+                { name: 'Sumon Hossain', rating: '⭐ 4.5', rate: '400 BDT/hr', availability: 'Busy until 4 PM' }
+            ],
+            'Electrical': [
+                { name: 'Tariqul Islam', rating: '⭐ 4.9', rate: '600 BDT/hr', availability: 'Available Now' },
+                { name: 'Mehedi Hasan', rating: '⭐ 4.2', rate: '450 BDT/hr', availability: 'Available Tomorrow' }
+            ],
+            'Carpentry': [
+                { name: 'Arif Ahmed', rating: '⭐ 4.7', rate: '550 BDT/hr', availability: 'Available Now' }
+            ],
+            'Cleaning': [
+                { name: 'Sultana Begum', rating: '⭐ 4.9', rate: '350 BDT/hr', availability: 'Available Now' }
+            ]
+        };
+
+        function viewCategory(categoryName) {
+            // Hide dashboard, show worker screen
+            document.getElementById('dashboard-view').style.display = 'none';
+            document.getElementById('workers-view').style.display = 'block';
+            document.getElementById('category-title').innerText = categoryName + ' Specialists';
+
+            const listContainer = document.getElementById('workers-list');
+            listContainer.innerHTML = ''; // Clear previous list
+
+            const workers = workersDatabase[categoryName] || [];
+            
+            if(workers.length === 0) {
+                listContainer.innerHTML = '<p>No workers found in this category.</p>';
+                return;
+            }
+
+            // Create worker listing boxes dynamically
+            workers.forEach(worker => {
+                const workerCard = document.createElement('div');
+                workerCard.style.cssText = "background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0;";
+                
+                workerCard.innerHTML = `
+                    <div>
+                        <h3 style="color: #1e293b;">${worker.name}</h3>
+                        <p style="color: #64748b; font-size: 14px; margin-top: 4px;">${worker.rating} • ${worker.rate}</p>
+                        <span style="font-size: 12px; color: ${worker.availability === 'Available Now' ? '#10b981' : '#f59e0b'}">${worker.availability}</span>
+                    </div>
+                   <button class="promo-btn" style="padding: 8px 16px;" onclick="placeBooking('${worker.name}')">Book Worker</button>
+                `;
+                listContainer.appendChild(workerCard);
+            });
+        }
+async function placeBooking(workerName) {
+    try {
+        const response = await fetch('http://localhost:5000/api/bookings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                worker_name: workerName,
+                customer_name: 'Shahriar Kabir' // Hardcoded student profile name for testing
+            })
+        });
+        
+        const data = await response.json();
+        alert(`Success! ${data.message} (Booking ID: ${data.bookingId})`);
+        
+        // Refresh the booking view automatically if they are looking at it
+        if (document.getElementById('my-bookings-view').style.display === 'block') {
+            viewMyBookings();
+        }
+    } catch (error) {
+        console.error("Booking Error:", error);
+        alert("Failed to submit booking to server.");
+    }
+}
+        function showDashboard() {
+            document.getElementById('workers-view').style.display = 'none';
+            document.getElementById('dashboard-view').style.display = 'block';
+        }
+        async function viewMyBookings() {
+    // 1. Manage visible windows
+    document.getElementById('dashboard-view').style.display = 'none';
+    document.getElementById('workers-view').style.display = 'none';
+    document.getElementById('my-bookings-view').style.display = 'block';
+
+    // Update active state class highlights in sidebar
+    document.getElementById('nav-dashboard').classList.remove('active');
+    document.getElementById('nav-bookings').classList.add('active');
+
+    const listContainer = document.getElementById('bookings-history-list');
+    listContainer.innerHTML = '<p style="color: #64748b;">Loading history...</p>';
+
+    try {
+        // 2. Request details from backend using your current profile name
+        const response = await fetch('http://localhost:5000/api/my-bookings/Shahriar Kabir');
+        const bookings = await response.json();
+
+        listContainer.innerHTML = ''; // Clear loading text
+
+        if (bookings.length === 0) {
+            listContainer.innerHTML = '<p style="color: #64748b;">You haven\'t booked any service professionals yet.</p>';
+            return;
+        }
+
+        // 3. Populate cards
+        bookings.forEach(booking => {
+            const formattedDate = new Date(booking.booking_date).toLocaleDateString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute:'2-digit'
+            });
+
+            const bookingCard = document.createElement('div');
+            bookingCard.style.cssText = "background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #e2e8f0;";
+            
+            bookingCard.innerHTML = `
+                <div>
+                    <h3 style="color: #1e293b;">Job Assigned to: ${booking.worker_name}</h3>
+                    <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Booked on: ${formattedDate}</p>
+                    <p style="color: #94a3b8; font-size: 11px; margin-top: 2px;">Order ID: #OCH-${booking.id}</p>
+                </div>
+                <div>
+                    <span style="background: #e0f2fe; color: #0369a1; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">${booking.status}</span>
+                </div>
+            `;
+            listContainer.appendChild(bookingCard);
+        });
+
+    } catch (error) {
+        console.error("Booking view error:", error);
+        listContainer.innerHTML = '<p style="color: #ef4444;">Could not load booking logs.</p>';
+    }
+}
+
+function showDashboard() {
+    document.getElementById('workers-view').style.display = 'none';
+    document.getElementById('my-bookings-view').style.display = 'none';
+    document.getElementById('dashboard-view').style.display = 'block';
+    
+    document.getElementById('nav-bookings').classList.remove('active');
+    document.getElementById('nav-dashboard').classList.add('active');
+}
+    </script>
+</body>
