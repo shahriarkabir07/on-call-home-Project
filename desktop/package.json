@@ -1,0 +1,15 @@
+{
+  "name": "desktop",
+  "version": "1.0.0",
+  "description": "Desktop Management Suite for On-Call Home Service",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "Shahriar Kabir",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^43.3.0"
+  }
+}
