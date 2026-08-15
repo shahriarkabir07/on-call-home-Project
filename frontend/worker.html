@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Worker Panel</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+.booking-card,
+.review-card{
+background:white;
+border-radius:18px;
+padding:22px;
+margin-bottom:20px;
+box-shadow:0 8px 24px rgba(0,0,0,0.06);
+}
+
+.actions{
+display:flex;
+gap:10px;
+margin-top:16px;
+}
+
+.actions button{
+flex:1;
+padding:12px;
+border:none;
+border-radius:12px;
+color:white;
+font-weight:600;
+cursor:pointer;
+}
+
+.accept{
+background:#16a34a;
+}
+
+.reject{
+background:#dc2626;
+}
+
+.complete{
+background:#2563eb;
+}
+
+.stars{
+font-size:20px;
+color:#f59e0b;
+}
+
+.status-completed{
+color:#16a34a;
+font-weight:700;
+}
+
+.status-rejected{
+color:#dc2626;
+font-weight:700;
+}
+
+.status-accepted{
+color:#2563eb;
+font-weight:700;
+}
+
+.status-pending{
+color:#f59e0b;
+font-weight:700;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="dashboard">
+
+<div class="topbar">
+
+<div class="brand">
+Worker Panel
+</div>
+
+<div class="user-info">
+
+<div id="workerName"></div>
+
+<button
+class="logout-btn"
+id="logoutBtn">
+Logout
+</button>
+
+</div>
+
+</div>
+
+
+<div class="main-content">
+
+
+<div class="welcome-card">
+
+<h1>
+Assigned Bookings
+</h1>
+
+<p>
+Accept, reject, or complete customer requests.
+</p>
+
+</div>
+
+
+<div id="bookingList"></div>
+
+
+<h2>
+Customer Reviews
+</h2>
+
+<div id="reviewList"></div>
+
+
+</div>
+
+</div>
+
+
+<script>
+
+
+// =====================================================
+// CHECK WORKER LOGIN
+// =====================================================
+
+const user =
+JSON.parse(
+localStorage.getItem('user')
+);
+
+
+if(
+!user ||
+user.role !== 'worker'
+){
+
+    location.href =
+        'index.html';
+
+}
+
+
+// =====================================================
+// SHOW WORKER NAME
+// =====================================================
+
+document.getElementById(
+    'workerName'
+).innerText =
+    user.full_name;
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+document.getElementById(
+    'logoutBtn'
+).onclick = () => {
+
+    localStorage.removeItem(
+        'user'
+    );
+
+    window.location.href =
+        'index.html';
+
+};
+
+
+// =====================================================
+// LOAD BOOKINGS
+// =====================================================
+
+async function loadBookings(){
+
+    try{
+
+        const result =
+            await window.electronAPI
+                .getWorkerBookings(
+                    user.user_id
+                );
+
+
+        const list =
+            document.getElementById(
+                'bookingList'
+            );
+
+
+        if(
+            !result.success ||
+            !result.bookings ||
+            result.bookings.length === 0
+        ){
+
+            list.innerHTML =
+                '<p>No assigned bookings</p>';
+
+            return;
+
+        }
+
+
+        list.innerHTML =
+            result.bookings.map(
+                b => {
+
+
+                    // =================================
+                    // STATUS CLASS
+                    // =================================
+
+                    let statusClass = '';
+
+                    if(
+                        b.status === 'Completed'
+                    ){
+
+                        statusClass =
+                            'status-completed';
+
+                    }
+                    else if(
+                        b.status === 'Rejected'
+                    ){
+
+                        statusClass =
+                            'status-rejected';
+
+                    }
+                    else if(
+                        b.status === 'Accepted'
+                    ){
+
+                        statusClass =
+                            'status-accepted';
+
+                    }
+                    else if(
+                        b.status === 'Pending'
+                    ){
+
+                        statusClass =
+                            'status-pending';
+
+                    }
+
+
+                    // =================================
+                    // BUTTONS
+                    // =================================
+
+                    let actionButtons = '';
+
+
+                    // -------------------------------
+                    // PENDING
+                    // -------------------------------
+
+                    if(
+                        b.status === 'Pending'
+                    ){
+
+                        actionButtons = `
+
+                            <div class="actions">
+
+                                <button
+                                    class="accept"
+                                    onclick="
+                                        setStatus(
+                                            ${b.booking_id},
+                                            'Accepted'
+                                        )
+                                    ">
+
+                                    Accept
+
+                                </button>
+
+
+                                <button
+                                    class="reject"
+                                    onclick="
+                                        setStatus(
+                                            ${b.booking_id},
+                                            'Rejected'
+                                        )
+                                    ">
+
+                                    Reject
+
+                                </button>
+
+                            </div>
+
+                        `;
+
+                    }
+
+
+                    // -------------------------------
+                    // ACCEPTED
+                    // -------------------------------
+
+                    else if(
+                        b.status === 'Accepted'
+                    ){
+
+                        actionButtons = `
+
+                            <div class="actions">
+
+                                <button
+                                    class="complete"
+                                    onclick="
+                                        setStatus(
+                                            ${b.booking_id},
+                                            'Completed'
+                                        )
+                                    ">
+
+                                    Complete
+
+                                </button>
+
+                            </div>
+
+                        `;
+
+                    }
+
+
+                    // -------------------------------
+                    // COMPLETED / REJECTED
+                    // -------------------------------
+
+                    else{
+
+                        actionButtons = '';
+
+                    }
+
+
+                    // =================================
+                    // BOOKING CARD
+                    // =================================
+
+                    return `
+
+                        <div class="booking-card">
+
+                            <h3>
+                                ${b.service_name}
+                            </h3>
+
+
+                            <p>
+                                <b>Customer:</b>
+                                ${b.full_name}
+                            </p>
+
+
+                            <p>
+                                <b>Phone:</b>
+                                ${b.phone}
+                            </p>
+
+
+                            <p>
+                                <b>Address:</b>
+                                ${b.customer_address}
+                            </p>
+
+
+                            <p>
+                                <b>Price:</b>
+                                ৳ ${b.price}
+                            </p>
+
+
+                            <p>
+
+                                <b>Status:</b>
+
+                                <span
+                                    class="${statusClass}">
+
+                                    ${b.status}
+
+                                </span>
+
+                            </p>
+
+
+                            ${actionButtons}
+
+                        </div>
+
+                    `;
+
+                }
+            ).join('');
+
+
+    }
+    catch(error){
+
+        console.error(
+            'LOAD BOOKINGS ERROR:',
+            error
+        );
+
+        document.getElementById(
+            'bookingList'
+        ).innerHTML =
+
+            '<p>Failed to load bookings.</p>';
+
+    }
+
+}
+
+
+// =====================================================
+// UPDATE BOOKING STATUS
+// =====================================================
+
+async function setStatus(
+    id,
+    status
+){
+
+    try{
+
+        const result =
+            await window.electronAPI
+                .updateBookingStatus({
+
+                    bookingId:
+                        id,
+
+                    status:
+                        status
+
+                });
+
+
+        if(
+            result.success
+        ){
+
+            alert(
+                'Booking ' +
+                status
+            );
+
+
+            // Reload bookings
+            // so buttons update immediately
+
+            await loadBookings();
+
+        }
+        else{
+
+            alert(
+                result.message ||
+                'Failed to update booking'
+            );
+
+        }
+
+    }
+    catch(error){
+
+        console.error(
+            'STATUS UPDATE ERROR:',
+            error
+        );
+
+        alert(
+            'Failed to update booking'
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// LOAD CUSTOMER REVIEWS
+// =====================================================
+
+async function loadReviews(){
+
+    try{
+
+        const result =
+            await window.electronAPI
+                .getWorkerReviews(
+                    user.user_id
+                );
+
+
+        const list =
+            document.getElementById(
+                'reviewList'
+            );
+
+
+        if(
+            !result.success ||
+            !result.reviews ||
+            result.reviews.length === 0
+        ){
+
+            list.innerHTML =
+                '<p>No reviews yet</p>';
+
+            return;
+
+        }
+
+
+        list.innerHTML =
+            result.reviews.map(
+                r => `
+
+                    <div
+                        class="review-card">
+
+                        <div class="stars">
+
+                            ${
+                                '★'.repeat(
+                                    r.rating
+                                )
+                            }
+
+                            ${
+                                '☆'.repeat(
+                                    5 - r.rating
+                                )
+                            }
+
+                        </div>
+
+
+                        <p>
+                            <b>
+                                ${r.full_name}
+                            </b>
+                        </p>
+
+
+                        <p>
+                            ${
+                                r.review_text ||
+                                'No comment'
+                            }
+                        </p>
+
+
+                        <small>
+
+                            ${
+                                new Date(
+                                    r.created_at
+                                ).toLocaleString()
+                            }
+
+                        </small>
+
+                    </div>
+
+                `
+            ).join('');
+
+
+    }
+    catch(error){
+
+        console.error(
+            'LOAD REVIEWS ERROR:',
+            error
+        );
+
+        document.getElementById(
+            'reviewList'
+        ).innerHTML =
+            '<p>Failed to load reviews.</p>';
+
+    }
+
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+loadBookings();
+
+loadReviews();
+
+
+</script>
+
+</body>
+</html>

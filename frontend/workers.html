@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Choose Worker</title>
+
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+.workers{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+gap:24px;
+margin-top:24px;
+}
+
+.worker-card{
+background:white;
+border-radius:24px;
+padding:24px;
+box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+.avatar{
+width:72px;
+height:72px;
+border-radius:50%;
+background:#e0e7ff;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:32px;
+margin-bottom:18px;
+}
+
+.rate{
+font-size:28px;
+font-weight:700;
+color:#2563eb;
+margin:14px 0;
+}
+
+.stars{
+color:#f59e0b;
+font-size:20px;
+margin-bottom:10px;
+}
+
+.no-rating{
+color:#6b7280;
+font-size:14px;
+margin-bottom:10px;
+}
+
+.review-count{
+color:#6b7280;
+font-size:13px;
+margin-left:5px;
+}
+
+.book-btn{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+background:#2563eb;
+color:white;
+font-weight:600;
+cursor:pointer;
+margin-top:14px;
+}
+
+.book-btn:hover{
+background:#1d4ed8;
+}
+
+/* =========================================
+   BOOKED BUTTON
+========================================= */
+
+.booked-btn{
+width:100%;
+padding:14px;
+border:none;
+border-radius:14px;
+background:#16a34a;
+color:white;
+font-weight:600;
+cursor:not-allowed;
+margin-top:14px;
+opacity:0.9;
+}
+
+/* =========================================
+   MODAL
+========================================= */
+
+.modal{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.45);
+display:none;
+align-items:center;
+justify-content:center;
+z-index:1000;
+}
+
+.modal-box{
+background:white;
+padding:24px;
+border-radius:20px;
+width:420px;
+}
+
+.modal-box textarea{
+width:100%;
+height:110px;
+padding:12px;
+border:1px solid #d1d5db;
+border-radius:12px;
+resize:none;
+margin:14px 0 18px;
+box-sizing:border-box;
+}
+
+.actions{
+display:flex;
+gap:12px;
+}
+
+.actions button{
+flex:1;
+padding:12px;
+border:none;
+border-radius:12px;
+font-weight:600;
+cursor:pointer;
+}
+
+.cancel{
+background:#e5e7eb;
+}
+
+.confirm{
+background:#2563eb;
+color:white;
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="dashboard">
+
+<div class="topbar">
+
+<div class="brand" id="pageTitle">
+Workers
+</div>
+
+<div class="user-info">
+
+<button
+class="primary-btn"
+onclick="location.href='dashboard.html'">
+Back
+</button>
+
+</div>
+
+</div>
+
+
+<div class="main-content">
+
+<div
+class="workers"
+id="workerGrid">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ============================= -->
+<!-- BOOKING MODAL -->
+<!-- ============================= -->
+
+<div
+class="modal"
+id="bookingModal">
+
+<div class="modal-box">
+
+<h3>Enter Service Address</h3>
+
+<textarea
+id="addressInput"
+placeholder="House, road, area, city">
+</textarea>
+
+<div class="actions">
+
+<button
+class="cancel"
+onclick="closeBooking()">
+Cancel
+</button>
+
+<button
+class="confirm"
+onclick="confirmBooking()">
+Confirm Booking
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+
+// =====================================================
+// GET CATEGORY AND USER
+// =====================================================
+
+const category =
+localStorage.getItem('selectedCategory');
+
+const user =
+JSON.parse(localStorage.getItem('user'));
+
+
+if(!category || !user){
+
+    location.href='dashboard.html';
+
+}
+
+
+document.getElementById(
+    'pageTitle'
+).innerText =
+    category + ' Workers';
+
+
+let selectedWorker = null;
+
+
+// =====================================================
+// LOAD WORKERS
+// =====================================================
+
+async function loadWorkers(){
+
+    try{
+
+        // =============================================
+        // GET WORKERS
+        // =============================================
+
+        const result =
+            await window.electronAPI
+                .getWorkersByCategory(category);
+
+
+        const grid =
+            document.getElementById(
+                'workerGrid'
+            );
+
+
+        if(
+            !result.success ||
+            !result.workers ||
+            result.workers.length === 0
+        ){
+
+            grid.innerHTML = `
+                <p>
+                    No workers available in this category.
+                </p>
+            `;
+
+            return;
+        }
+
+
+        // =============================================
+        // GET CUSTOMER BOOKINGS
+        // =============================================
+
+        const bookingResult =
+            await window.electronAPI
+                .getUserBookings(
+                    user.user_id
+                );
+
+
+        // =============================================
+        // STORE ACTIVE BOOKINGS
+        // =============================================
+
+        const bookedWorkers =
+            new Set();
+
+
+        if(
+            bookingResult.success &&
+            bookingResult.bookings
+        ){
+
+            bookingResult.bookings.forEach(
+                booking => {
+
+                    /*
+                     * Pending and Accepted bookings
+                     * mean that this worker is currently
+                     * booked by the customer.
+                     *
+                     * Rejected and Completed bookings
+                     * allow the customer to book again.
+                     */
+
+                    if(
+                        booking.status === 'Pending' ||
+                        booking.status === 'Accepted'
+                    ){
+
+                        bookedWorkers.add(
+                            Number(
+                                booking.worker_id
+                            )
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        // =============================================
+        // CREATE WORKER CARDS
+        // =============================================
+
+        grid.innerHTML =
+            result.workers.map(w => {
+
+
+                // =====================================
+                // RATING
+                // =====================================
+
+                let ratingHTML = '';
+
+
+                if(
+                    w.review_count &&
+                    w.average_rating !== null
+                ){
+
+                    const rating =
+                        Number(
+                            w.average_rating
+                        );
+
+
+                    const fullStars =
+                        Math.floor(
+                            rating
+                        );
+
+
+                    const hasHalfStar =
+                        rating - fullStars >= 0.5;
+
+
+                    let stars = '';
+
+
+                    // Full stars
+
+                    for(
+                        let i = 0;
+                        i < fullStars;
+                        i++
+                    ){
+
+                        stars += '★';
+
+                    }
+
+
+                    // Half star
+
+                    if(hasHalfStar){
+
+                        stars += '½';
+
+                    }
+
+
+                    // Empty stars
+
+                    const used =
+                        fullStars +
+                        (hasHalfStar ? 1 : 0);
+
+
+                    for(
+                        let i = used;
+                        i < 5;
+                        i++
+                    ){
+
+                        stars += '☆';
+
+                    }
+
+
+                    ratingHTML = `
+
+                        <div class="stars">
+
+                            ${stars}
+
+                            <span class="review-count">
+
+                                ${rating.toFixed(1)}
+
+                                (${w.review_count}
+                                ${w.review_count == 1
+                                    ? 'review'
+                                    : 'reviews'})
+
+                            </span>
+
+                        </div>
+
+                    `;
+
+                }
+
+                else{
+
+                    ratingHTML = `
+
+                        <div class="no-rating">
+                            ⭐ No ratings yet
+                        </div>
+
+                    `;
+
+                }
+
+
+                // =====================================
+                // CHECK IF WORKER IS BOOKED
+                // =====================================
+
+                const isBooked =
+                    bookedWorkers.has(
+                        Number(
+                            w.user_id
+                        )
+                    );
+
+
+                let buttonHTML;
+
+
+                if(isBooked){
+
+                    buttonHTML = `
+
+                        <button
+                            class="booked-btn"
+                            disabled>
+
+                            ✓ Booked
+
+                        </button>
+
+                    `;
+
+                }
+
+                else{
+
+                    buttonHTML = `
+
+                        <button
+                            class="book-btn"
+                            onclick="openBooking(${w.user_id})">
+
+                            Book This Worker
+
+                        </button>
+
+                    `;
+
+                }
+
+
+                // =====================================
+                // WORKER CARD
+                // =====================================
+
+                return `
+
+                    <div class="worker-card">
+
+                        <div class="avatar">
+                            👨
+                        </div>
+
+
+                        <h3>
+                            ${w.full_name}
+                        </h3>
+
+
+                        ${ratingHTML}
+
+
+                        <p>
+                            📞 ${w.phone}
+                        </p>
+
+
+                        <div class="rate">
+                            ৳ ${w.worker_rate}
+                        </div>
+
+
+                        ${buttonHTML}
+
+                    </div>
+
+                `;
+
+            }).join('');
+
+
+    }
+    catch(error){
+
+        console.error(
+            'LOAD WORKERS ERROR:',
+            error
+        );
+
+
+        document.getElementById(
+            'workerGrid'
+        ).innerHTML = `
+
+            <p>
+                Failed to load workers.
+                Please try again.
+            </p>
+
+        `;
+
+    }
+
+}
+
+
+// =====================================================
+// OPEN BOOKING
+// =====================================================
+
+function openBooking(workerId){
+
+    selectedWorker =
+        workerId;
+
+
+    document.getElementById(
+        'bookingModal'
+    ).style.display =
+        'flex';
+
+}
+
+
+// =====================================================
+// CLOSE BOOKING
+// =====================================================
+
+function closeBooking(){
+
+    document.getElementById(
+        'bookingModal'
+    ).style.display =
+        'none';
+
+
+    document.getElementById(
+        'addressInput'
+    ).value = '';
+
+}
+
+
+// =====================================================
+// CONFIRM BOOKING
+// =====================================================
+
+async function confirmBooking(){
+
+    const address =
+        document.getElementById(
+            'addressInput'
+        ).value.trim();
+
+
+    if(!address){
+
+        alert(
+            'Please enter your address'
+        );
+
+        return;
+
+    }
+
+
+    // =============================================
+    // SERVICE MAP
+    // =============================================
+
+    const serviceMap = {
+
+        'Painter': 4,
+
+        'Electrician': 2,
+
+        'Plumber': 1,
+
+        'Carpenter': 3,
+
+        'Cleaner': 5
+
+    };
+
+
+    // =============================================
+    // CREATE BOOKING
+    // =============================================
+
+    const result =
+        await window.electronAPI.createBooking({
+
+            userId:
+                user.user_id,
+
+            serviceId:
+                serviceMap[category],
+
+            customerAddress:
+                address,
+
+            workerId:
+                selectedWorker
+
+        });
+
+
+    // =============================================
+    // BOOKING SUCCESS
+    // =============================================
+
+    if(result.success){
+
+        alert(
+            'Booking submitted successfully!'
+        );
+
+
+        closeBooking();
+
+
+        // =========================================
+        // Immediately change button to "Booked"
+        // =========================================
+
+        const buttons =
+            document.querySelectorAll(
+                '.book-btn'
+            );
+
+
+        buttons.forEach(
+            button => {
+
+                const onclickValue =
+                    button.getAttribute(
+                        'onclick'
+                    );
+
+
+                if(
+                    onclickValue &&
+                    onclickValue.includes(
+                        `openBooking(${selectedWorker})`
+                    )
+                ){
+
+                    button.className =
+                        'booked-btn';
+
+
+                    button.innerText =
+                        '✓ Booked';
+
+
+                    button.disabled =
+                        true;
+
+
+                    button.removeAttribute(
+                        'onclick'
+                    );
+
+                }
+
+            }
+        );
+
+
+        // Reset selected worker
+
+        selectedWorker = null;
+
+    }
+
+    else{
+
+        alert(
+            result.message ||
+            'Booking failed'
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+loadWorkers();
+
+
+</script>
+
+</body>
+</html>

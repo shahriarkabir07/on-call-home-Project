@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .booking-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+        }
+
+        .booking-table th,
+        .booking-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .booking-table th {
+            background: #f9fafb;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+
+    <div class="topbar">
+        <div class="brand">Admin Panel</div>
+
+        <div class="user-info">
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+
+        <div class="welcome-card">
+            <h1>All Bookings</h1>
+            <p>Monitor all customer bookings</p>
+        </div>
+
+        <table class="booking-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Customer</th>
+                    <th>Email</th>
+                    <th>Service</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+
+            <tbody id="bookingBody"></tbody>
+        </table>
+
+    </div>
+</div>
+
+<script>
+const user = JSON.parse(localStorage.getItem('user'));
+
+if (!user || user.role !== 'admin') {
+    window.location.href = 'index.html';
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+});
+
+async function loadBookings() {
+    const result = await window.electronAPI.getAllBookings();
+
+    const body = document.getElementById('bookingBody');
+
+    if (result.success && result.bookings.length > 0) {
+        body.innerHTML = result.bookings.map(b => `
+            <tr>
+                <td>#${b.booking_id}</td>
+                <td>${b.full_name}</td>
+                <td>${b.email}</td>
+                <td>${b.service_name}</td>
+                <td>৳ ${b.price}</td>
+                <td>${b.status}</td>
+                <td>${new Date(b.booking_date).toLocaleString()}</td>
+            </tr>
+        `).join('');
+    } else {
+        body.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align:center; padding:30px;">
+                    No bookings found
+                </td>
+            </tr>
+        `;
+    }
+}
+
+loadBookings();
+</script>
+
+</body>
+</html>

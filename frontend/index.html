@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>OnCall Home</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="auth-container">
+
+<div class="auth-card">
+
+<div class="logo">🏠</div>
+
+<h1>OnCall Home</h1>
+
+<p class="subtitle">Find trusted professionals for your home</p>
+
+<div class="tabs">
+<button id="loginTab" class="tab active">Login</button>
+<button id="registerTab" class="tab">Register</button>
+</div>
+
+<div id="message"></div>
+
+<!-- LOGIN -->
+
+<div id="loginSection" class="tab-content active">
+
+<div class="form-group">
+<label>Email</label>
+<input type="email" id="loginEmail">
+</div>
+
+<div class="form-group">
+<label>Password</label>
+<input type="password" id="loginPassword">
+</div>
+
+<button id="loginBtn" class="primary-btn">Login</button>
+
+</div>
+
+<!-- REGISTER -->
+
+<div id="registerSection" class="tab-content">
+
+<div class="form-group">
+<label>Full Name</label>
+<input type="text" id="fullName">
+</div>
+
+<div class="form-group">
+<label>Email</label>
+<input type="email" id="email">
+</div>
+
+<div class="form-group">
+<label>Password</label>
+<input type="password" id="password">
+</div>
+
+<div class="form-group">
+<label>Phone</label>
+<input type="text" id="phone">
+</div>
+
+<div class="form-group">
+<label>Role</label>
+
+<select id="role" onchange="toggleWorkerFields()">
+<option value="customer">Customer</option>
+<option value="worker">Worker</option>
+</select>
+
+</div>
+
+<div id="workerFields" style="display:none;">
+
+<div class="form-group">
+<label>Profession</label>
+
+<select id="workerCategory">
+<option value="Painter">Painter</option>
+<option value="Electrician">Electrician</option>
+<option value="Plumber">Plumber</option>
+<option value="Carpenter">Carpenter</option>
+<option value="Cleaner">Cleaner</option>
+</select>
+
+</div>
+
+<div class="form-group">
+<label>Service Rate (৳)</label>
+<input type="number" id="workerRate" placeholder="Enter your rate">
+</div>
+
+</div>
+
+<button id="registerBtn" class="primary-btn">Create Account</button>
+
+</div>
+
+</div>
+</div>
+
+
+<script src="renderer.js"></script>
+
+</body>
+</html>

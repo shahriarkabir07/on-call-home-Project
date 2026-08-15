@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>My Bookings</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+
+.booking-card{
+background:white;
+border-radius:18px;
+padding:22px;
+margin-bottom:20px;
+box-shadow:0 8px 24px rgba(0,0,0,0.06)
+}
+
+.review-box{
+margin-top:18px;
+padding-top:18px;
+border-top:1px solid #e5e7eb
+}
+
+.review-box select,
+.review-box textarea{
+width:100%;
+padding:12px;
+border:1px solid #d1d5db;
+border-radius:12px;
+margin-top:10px
+}
+
+.review-box textarea{
+height:90px;
+resize:none
+}
+
+.review-box button{
+margin-top:12px;
+padding:12px 18px;
+border:none;
+border-radius:12px;
+background:#2563eb;
+color:white;
+font-weight:600;
+cursor:pointer
+}
+
+.review-box button:hover{
+background:#1d4ed8
+}
+
+/* =========================================
+   REVIEW SUBMITTED MESSAGE
+========================================= */
+
+.review-submitted{
+margin-top:18px;
+padding-top:18px;
+border-top:1px solid #e5e7eb;
+color:#16a34a;
+font-weight:600;
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="dashboard">
+
+
+<!-- =========================================
+     TOP BAR
+========================================= -->
+
+<div class="topbar">
+
+<div class="brand">
+My Bookings
+</div>
+
+<div class="user-info">
+
+<button
+class="primary-btn"
+onclick="location.href='dashboard.html'">
+Dashboard
+</button>
+
+<button
+class="logout-btn"
+id="logoutBtn">
+Logout
+</button>
+
+</div>
+
+</div>
+
+
+<!-- =========================================
+     MAIN CONTENT
+========================================= -->
+
+<div class="main-content">
+
+<div id="bookingList"></div>
+
+</div>
+
+</div>
+
+
+<script>
+
+
+// =====================================================
+// GET CURRENT USER
+// =====================================================
+
+const user =
+JSON.parse(
+    localStorage.getItem('user')
+);
+
+
+if(!user){
+
+    location.href='index.html';
+
+}
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+document.getElementById(
+    'logoutBtn'
+).onclick = () => {
+
+    localStorage.removeItem('user');
+
+    location.href='index.html';
+
+};
+
+
+// =====================================================
+// GET REVIEWED BOOKINGS FROM LOCAL STORAGE
+// =====================================================
+
+function getReviewedBookings(){
+
+    const key =
+        'reviewedBookings_' +
+        user.user_id;
+
+
+    const saved =
+        localStorage.getItem(key);
+
+
+    if(!saved){
+
+        return [];
+
+    }
+
+
+    try{
+
+        return JSON.parse(saved);
+
+    }
+    catch(error){
+
+        console.error(
+            'REVIEW STORAGE ERROR:',
+            error
+        );
+
+        return [];
+
+    }
+
+}
+
+
+// =====================================================
+// SAVE BOOKING AS REVIEWED
+// =====================================================
+
+function markBookingAsReviewed(
+    bookingId
+){
+
+    const key =
+        'reviewedBookings_' +
+        user.user_id;
+
+
+    const reviewedBookings =
+        getReviewedBookings();
+
+
+    if(
+        !reviewedBookings.includes(
+            Number(bookingId)
+        )
+    ){
+
+        reviewedBookings.push(
+            Number(bookingId)
+        );
+
+    }
+
+
+    localStorage.setItem(
+        key,
+        JSON.stringify(
+            reviewedBookings
+        )
+    );
+
+}
+
+
+// =====================================================
+// CHECK IF BOOKING WAS ALREADY REVIEWED
+// =====================================================
+
+function isBookingReviewed(
+    bookingId
+){
+
+    const reviewedBookings =
+        getReviewedBookings();
+
+
+    return reviewedBookings.includes(
+        Number(bookingId)
+    );
+
+}
+
+
+// =====================================================
+// LOAD BOOKINGS
+// =====================================================
+
+async function loadBookings(){
+
+    try{
+
+        const r =
+            await window.electronAPI
+                .getUserBookings(
+                    user.user_id
+                );
+
+
+        const list =
+            document.getElementById(
+                'bookingList'
+            );
+
+
+        if(
+            !r.success ||
+            !r.bookings ||
+            r.bookings.length === 0
+        ){
+
+            list.innerHTML =
+                '<p>No bookings found</p>';
+
+            return;
+
+        }
+
+
+        // =============================================
+        // CREATE BOOKING CARDS
+        // =============================================
+
+        list.innerHTML =
+            r.bookings.map(
+                b => {
+
+
+                    // =================================
+                    // CHECK REVIEW STATUS
+                    // =================================
+
+                    const alreadyReviewed =
+                        isBookingReviewed(
+                            b.booking_id
+                        );
+
+
+                    let reviewSection = '';
+
+
+                    // =================================
+                    // COMPLETED + NOT REVIEWED
+                    // =================================
+
+                    if(
+                        b.status === 'Completed' &&
+                        !alreadyReviewed
+                    ){
+
+                        reviewSection = `
+
+                            <div
+                                class="review-box"
+                                id="reviewBox-${b.booking_id}">
+
+                                <label>
+                                    Rating
+                                </label>
+
+                                <select
+                                    id="rating-${b.booking_id}">
+
+                                    <option value="5">
+                                        ★★★★★ (5)
+                                    </option>
+
+                                    <option value="4">
+                                        ★★★★☆ (4)
+                                    </option>
+
+                                    <option value="3">
+                                        ★★★☆☆ (3)
+                                    </option>
+
+                                    <option value="2">
+                                        ★★☆☆☆ (2)
+                                    </option>
+
+                                    <option value="1">
+                                        ★☆☆☆☆ (1)
+                                    </option>
+
+                                </select>
+
+
+                                <label>
+                                    Review
+                                </label>
+
+                                <textarea
+                                    id="review-${b.booking_id}"
+                                    placeholder="Write your review...">
+                                </textarea>
+
+
+                                <button
+                                    onclick="
+                                        submitReview(
+                                            ${b.booking_id},
+                                            ${b.worker_id}
+                                        )
+                                    ">
+
+                                    Submit Review
+
+                                </button>
+
+                            </div>
+
+                        `;
+
+                    }
+
+
+                    // =================================
+                    // BOOKING CARD
+                    // =================================
+
+                    return `
+
+                        <div
+                            class="booking-card">
+
+                            <h3>
+                                ${b.service_name}
+                            </h3>
+
+
+                            <p>
+                                <b>Address:</b>
+                                ${b.customer_address}
+                            </p>
+
+
+                            <p>
+                                <b>Worker:</b>
+                                ${b.worker_name ||
+                                'Not assigned'}
+                            </p>
+
+
+                            <p>
+                                <b>Worker Phone:</b>
+                                ${b.worker_phone || '-'}
+                            </p>
+
+
+                            <p>
+                                <b>Price:</b>
+                                ৳ ${b.price}
+                            </p>
+
+
+                            <p>
+                                <b>Status:</b>
+                                ${b.status}
+                            </p>
+
+
+                            ${reviewSection}
+
+                        </div>
+
+                    `;
+
+                }
+            ).join('');
+
+
+    }
+    catch(error){
+
+        console.error(
+            'LOAD BOOKINGS ERROR:',
+            error
+        );
+
+
+        document.getElementById(
+            'bookingList'
+        ).innerHTML =
+
+            '<p>Could not load bookings</p>';
+
+    }
+
+}
+
+
+// =====================================================
+// SUBMIT REVIEW
+// =====================================================
+
+async function submitReview(
+    bookingId,
+    workerId
+){
+
+    const ratingElement =
+        document.getElementById(
+            `rating-${bookingId}`
+        );
+
+
+    const reviewElement =
+        document.getElementById(
+            `review-${bookingId}`
+        );
+
+
+    if(!ratingElement || !reviewElement){
+
+        return;
+
+    }
+
+
+    const rating =
+        parseInt(
+            ratingElement.value
+        );
+
+
+    const reviewText =
+        reviewElement.value.trim();
+
+
+    // =============================================
+    // SUBMIT TO DATABASE
+    // =============================================
+
+    const r =
+        await window.electronAPI.addReview({
+
+            bookingId,
+
+            customerId:
+                user.user_id,
+
+            workerId,
+
+            rating,
+
+            reviewText
+
+        });
+
+
+    // =============================================
+    // SUCCESS
+    // =============================================
+
+    if(r.success){
+
+        // Save this booking as reviewed
+
+        markBookingAsReviewed(
+            bookingId
+        );
+
+
+        alert(
+            'Review submitted successfully!'
+        );
+
+
+        // Reload bookings.
+        // The review section will now
+        // NOT appear for this booking.
+
+        loadBookings();
+
+    }
+
+    else{
+
+        alert(
+            r.message ||
+            'Failed to submit review'
+        );
+
+    }
+
+}
+
+
+// =====================================================
+// START
+// =====================================================
+
+loadBookings();
+
+
+</script>
+
+</body>
+</html>
