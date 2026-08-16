@@ -250,7 +250,6 @@ Electron Desktop Application
 * Improve automated testing and error logging
 
 ## Project Status
-
 The project currently includes a working Electron desktop interface, Railway-hosted Express API, Railway MySQL database integration, authentication, service browsing, booking management, ratings/reviews, worker management, and admin functionality.
 
 
