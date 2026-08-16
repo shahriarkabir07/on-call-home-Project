@@ -166,19 +166,14 @@ document.getElementById(
 // LOGOUT
 // =====================================================
 
-document.getElementById(
-    'logoutBtn'
-).onclick = () => {
+document.getElementById('logoutBtn').onclick = () => {
 
-    localStorage.removeItem(
-        'user'
-    );
+    localStorage.removeItem('user');
+    sessionStorage.clear();
+    localStorage.removeItem('selectedCategory');
 
-    window.location.href =
-        'index.html';
-
+    window.location.href = 'index.html';
 };
-
 
 // =====================================================
 // LOAD BOOKINGS

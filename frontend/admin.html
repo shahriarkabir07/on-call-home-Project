@@ -72,10 +72,12 @@ if (!user || user.role !== 'admin') {
     window.location.href = 'index.html';
 }
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
+document.getElementById('logoutBtn').onclick = () => {
     localStorage.removeItem('user');
-    window.location.href = 'index.html';
-});
+    sessionStorage.clear();
+
+    window.location.replace('index.html');
+};
 
 async function loadBookings() {
     const result = await window.electronAPI.getAllBookings();

@@ -193,6 +193,8 @@ My Bookings
 // Check login
 const user = JSON.parse(localStorage.getItem('user'));
 
+console.log('CUSTOMER USER:', user);
+
 if(!user || user.role !== 'customer'){
 window.location.assign('index.html');
 }
@@ -202,8 +204,13 @@ document.getElementById('userName').innerText = user.full_name;
 document.getElementById('userRole').innerText = user.role;
 
 // Logout
+
 document.getElementById('logoutBtn').onclick = () => {
+
     localStorage.removeItem('user');
+    sessionStorage.clear();
+    localStorage.removeItem('selectedCategory');
+
     window.location.href = 'index.html';
 };
 // Open category

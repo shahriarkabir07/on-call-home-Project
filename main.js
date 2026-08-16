@@ -6,24 +6,86 @@ const {
 
 const path = require('path');
 
-const auth = require('./backend/auth');
-const service = require('./backend/service');
-const booking = require('./backend/booking');
-const review = require('./backend/review');
+// =====================================================
+// RAILWAY API
+// =====================================================
+
+const API_BASE_URL =
+    'https://on-call-home-project-production.up.railway.app';
 
 
 // =====================================================
-// CREATE MAIN WINDOW
+// CURRENT WINDOW
 // =====================================================
+
+let mainWindow = null;
+
+
+// =====================================================
+// API HELPER
+// =====================================================
+
+async function apiRequest(endpoint, options = {}) {
+
+    try {
+
+        const response = await fetch(
+            `${API_BASE_URL}${endpoint}`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(options.headers || {})
+                },
+                ...options
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+
+            return {
+                success: false,
+                message:
+                    data.message ||
+                    `API request failed (${response.status})`
+            };
+        }
+
+        return data;
+
+    } catch (error) {
+
+        console.error(
+            'API Request Error:',
+            error
+        );
+
+        return {
+            success: false,
+            message:
+                'Unable to connect to OnCall Home server.'
+        };
+    }
+}
+
+
+// =====================================================
+// CREATE WINDOW
+// =====================================================
+
 function createWindow() {
 
-    const win = new BrowserWindow({
+    mainWindow = new BrowserWindow({
 
         width: 1280,
         height: 820,
 
         minWidth: 1000,
         minHeight: 700,
+
+        show: false,
+        focusable: true,
 
         webPreferences: {
 
@@ -38,59 +100,191 @@ function createWindow() {
         }
     });
 
-    win.loadFile(
+
+    // =================================================
+    // LOAD LOGIN PAGE
+    // =================================================
+
+    mainWindow.loadFile(
         path.join(
             __dirname,
             'frontend',
             'index.html'
         )
     );
+
+
+    // =================================================
+    // WHEN PAGE IS READY
+    // =================================================
+
+    mainWindow.webContents.on(
+        'did-finish-load',
+        () => {
+
+            setTimeout(() => {
+
+                if (
+                    mainWindow &&
+                    !mainWindow.isDestroyed()
+                ) {
+
+                    mainWindow.show();
+
+                    mainWindow.focus();
+
+                    mainWindow.webContents.focus();
+                }
+
+            }, 100);
+        }
+    );
+
+
+    // =================================================
+    // WINDOW CLOSED
+    // =================================================
+
+    mainWindow.on(
+        'closed',
+        () => {
+
+            mainWindow = null;
+        }
+    );
+
+
+    return mainWindow;
 }
+
+
+// =====================================================
+// LOGOUT
+// =====================================================
+
+ipcMain.handle(
+    'app:logout',
+    async (event) => {
+
+        try {
+
+            const currentWindow =
+                BrowserWindow.fromWebContents(
+                    event.sender
+                );
+
+
+            // Create a fresh login window
+            const newWindow = createWindow();
+
+
+            // Close the old dashboard window
+            if (
+                currentWindow &&
+                !currentWindow.isDestroyed()
+            ) {
+
+                currentWindow.close();
+            }
+
+
+            return {
+                success: true
+            };
+
+        } catch (error) {
+
+            console.error(
+                'LOGOUT ERROR:',
+                error
+            );
+
+            return {
+                success: false
+            };
+        }
+    }
+);
 
 
 // =====================================================
 // APP READY
 // =====================================================
+
 app.whenReady().then(() => {
 
     createWindow();
 
-    app.on('activate', () => {
+    app.on(
+        'activate',
+        () => {
 
-        if (BrowserWindow.getAllWindows().length === 0) {
-            createWindow();
+            if (
+                BrowserWindow.getAllWindows().length === 0
+            ) {
+
+                createWindow();
+            }
         }
-    });
+    );
 });
 
 
 // =====================================================
 // CLOSE APP
 // =====================================================
-app.on('window-all-closed', () => {
 
-    if (process.platform !== 'darwin') {
-        app.quit();
+app.on(
+    'window-all-closed',
+    () => {
+
+        if (
+            process.platform !== 'darwin'
+        ) {
+
+            app.quit();
+        }
     }
-});
+);
 
 
 // =====================================================
 // AUTH - REGISTER
 // =====================================================
+
 ipcMain.handle(
     'auth:register',
     async (event, data) => {
 
-        return await auth.registerUser(
+        return await apiRequest(
+            '/api/auth/register',
+            {
+                method: 'POST',
 
-            data.fullName,
-            data.email,
-            data.password,
-            data.phone,
-            data.role,
-            data.workerCategory,
-            data.workerRate
+                body: JSON.stringify({
+
+                    fullName:
+                        data.fullName,
+
+                    email:
+                        data.email,
+
+                    password:
+                        data.password,
+
+                    phone:
+                        data.phone,
+
+                    role:
+                        data.role,
+
+                    workerCategory:
+                        data.workerCategory,
+
+                    workerRate:
+                        data.workerRate
+                })
+            }
         );
     }
 );
@@ -99,13 +293,25 @@ ipcMain.handle(
 // =====================================================
 // AUTH - LOGIN
 // =====================================================
+
 ipcMain.handle(
     'auth:login',
     async (event, data) => {
 
-        return await auth.loginUser(
-            data.email,
-            data.password
+        return await apiRequest(
+            '/api/auth/login',
+            {
+                method: 'POST',
+
+                body: JSON.stringify({
+
+                    email:
+                        data.email,
+
+                    password:
+                        data.password
+                })
+            }
         );
     }
 );
@@ -114,24 +320,30 @@ ipcMain.handle(
 // =====================================================
 // SERVICES - CATEGORIES
 // =====================================================
+
 ipcMain.handle(
     'services:getCategories',
     async () => {
 
-        return await service.getCategories();
+        return await apiRequest(
+            '/api/services/categories'
+        );
     }
 );
 
 
 // =====================================================
-// SERVICES - WORKERS BY CATEGORY
+// SERVICES - WORKERS
 // =====================================================
+
 ipcMain.handle(
     'services:getWorkersByCategory',
     async (event, category) => {
 
-        return await service.getWorkersByCategory(
-            category
+        return await apiRequest(
+            `/api/services/workers?category=${encodeURIComponent(
+                category
+            )}`
         );
     }
 );
@@ -140,16 +352,31 @@ ipcMain.handle(
 // =====================================================
 // BOOKINGS - CREATE
 // =====================================================
+
 ipcMain.handle(
     'booking:create',
     async (event, data) => {
 
-        return await booking.createBooking(
+        return await apiRequest(
+            '/api/bookings',
+            {
+                method: 'POST',
 
-            data.userId,
-            data.serviceId,
-            data.customerAddress,
-            data.workerId
+                body: JSON.stringify({
+
+                    userId:
+                        data.userId,
+
+                    serviceId:
+                        data.serviceId,
+
+                    customerAddress:
+                        data.customerAddress,
+
+                    workerId:
+                        data.workerId
+                })
+            }
         );
     }
 );
@@ -158,12 +385,13 @@ ipcMain.handle(
 // =====================================================
 // BOOKINGS - CUSTOMER
 // =====================================================
+
 ipcMain.handle(
     'booking:getUserBookings',
     async (event, userId) => {
 
-        return await booking.getUserBookings(
-            userId
+        return await apiRequest(
+            `/api/bookings/user/${userId}`
         );
     }
 );
@@ -172,12 +400,13 @@ ipcMain.handle(
 // =====================================================
 // BOOKINGS - WORKER
 // =====================================================
+
 ipcMain.handle(
     'booking:getWorkerBookings',
     async (event, workerId) => {
 
-        return await booking.getWorkerBookings(
-            workerId
+        return await apiRequest(
+            `/api/bookings/worker/${workerId}`
         );
     }
 );
@@ -186,14 +415,22 @@ ipcMain.handle(
 // =====================================================
 // BOOKINGS - UPDATE STATUS
 // =====================================================
+
 ipcMain.handle(
     'booking:updateStatus',
     async (event, data) => {
 
-        return await booking.updateBookingStatus(
+        return await apiRequest(
+            `/api/bookings/${data.bookingId}/status`,
+            {
+                method: 'PATCH',
 
-            data.bookingId,
-            data.status
+                body: JSON.stringify({
+
+                    status:
+                        data.status
+                })
+            }
         );
     }
 );
@@ -202,11 +439,14 @@ ipcMain.handle(
 // =====================================================
 // BOOKINGS - ADMIN
 // =====================================================
+
 ipcMain.handle(
     'booking:getAll',
     async () => {
 
-        return await booking.getAllBookings();
+        return await apiRequest(
+            '/api/bookings/admin'
+        );
     }
 );
 
@@ -214,17 +454,34 @@ ipcMain.handle(
 // =====================================================
 // REVIEWS - ADD
 // =====================================================
+
 ipcMain.handle(
     'review:add',
     async (event, data) => {
 
-        return await review.addReview(
+        return await apiRequest(
+            '/api/reviews',
+            {
+                method: 'POST',
 
-            data.bookingId,
-            data.customerId,
-            data.workerId,
-            data.rating,
-            data.reviewText
+                body: JSON.stringify({
+
+                    bookingId:
+                        data.bookingId,
+
+                    customerId:
+                        data.customerId,
+
+                    workerId:
+                        data.workerId,
+
+                    rating:
+                        data.rating,
+
+                    reviewText:
+                        data.reviewText
+                })
+            }
         );
     }
 );
@@ -233,12 +490,13 @@ ipcMain.handle(
 // =====================================================
 // REVIEWS - WORKER REVIEWS
 // =====================================================
+
 ipcMain.handle(
     'review:getWorkerReviews',
     async (event, workerId) => {
 
-        return await review.getWorkerReviews(
-            workerId
+        return await apiRequest(
+            `/api/reviews/worker/${workerId}`
         );
     }
 );
